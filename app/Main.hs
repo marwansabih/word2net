@@ -1,6 +1,9 @@
 module Main where
 
-import Lib
+import           GradientDescent
+import           Lib
+import           System.Directory
+import           WordSet
 
 main :: IO ()
-main = someFunc
+main = testTraining
