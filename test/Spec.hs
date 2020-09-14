@@ -2,10 +2,10 @@ import           Control.Monad
 import           Data.HashMap        as M
 import           Data.Vector.Mutable as VM
 import           GradientDescent
+import           Memory
 import           Test.Hspec
 import           Test.QuickCheck
 import           WordSet
-
 
 testWCS :: IO WordVectors
 testWCS = do
@@ -20,7 +20,7 @@ testWCS = do
 main :: IO ()
 main = hspec $ do
   it "Should be a the set from 1..20" $ do
-    (set,wmap,_,wcs,wos) <- generateWordSet "texts/test.txt" 10
+    (_,set,wmap,_,wcs,wos) <- generateWordSet "texts/test.txt" 10
     print wmap
   it "genWordVec" $ do
     vec <- genWordVec 10
@@ -59,8 +59,8 @@ main = hspec $ do
     displayVector vec
 
   it "trainTextClassic" $ do
-    set <- trainTextClassic "texts/test.txt" 5 2 0.01
-    displayWordSet set
+    set <- generateWordSet "texts/test.txt" 5
+    set <- trainTextClassic set 2 0.01
     c <- closest "six" set
     print c
 
@@ -103,7 +103,44 @@ main = hspec $ do
       displayVector v
 
   it "trainText" $ do
-    set <- trainText "texts/test.txt" 20 2 10 0.001
-    displayWordSet set
+    set <- generateWordSet "texts/test.txt" 100
+    set <- trainText set 2 10 0.001
+    c <- closest "six" set
+    print c
+
+  it "loadWordSet and saveWordSet" $ do
+    (file,text,wmap,dist,us,vs) <- generateWordSet "texts/test.txt" 10
+    saveWordSet (file,text,wmap,dist,us,vs)
+    (file',text',wmap',dist',us',vs') <- loadWordSet "texts/test.txt"
+    file `shouldBe` file'
+    for [0..(VM.length text -1)] $ \idx -> do
+      w <- VM.read text idx
+      w' <- VM.read text' idx
+      w `shouldBe` w'
+    wmap `shouldBe` wmap'
+    dist `shouldBe` dist'
+    for [0..(VM.length us -1)] $ \idx -> do
+      (w,v) <- VM.read us idx
+      (w',v') <- VM.read us' idx
+      (w2,v2) <- VM.read vs idx
+      (w2',v2') <- VM.read vs' idx
+      w `shouldBe` w'
+      w2 `shouldBe` w2'
+      for [0.. (VM.length v -1)] $ \idx2 -> do
+        i <- VM.read v idx2
+        i' <- VM.read v' idx2
+        j <- VM.read v2 idx2
+        j' <- VM.read v2' idx2
+        i `shouldBe` i'
+        j  `shouldBe` j'
+    (_,v) <- VM.read us 0
+    (_,u) <- VM.read us' 0
+    VM.length v `shouldBe` VM.length u
+
+  it "training_after_loadWordSet" $ do
+    set <- generateWordSet "texts/test.txt" 10
+    saveWordSet set
+    set <- loadWordSet "texts/test.txt"
+    set <- trainText set 2 10 0.001
     c <- closest "six" set
     print c

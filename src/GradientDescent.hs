@@ -5,16 +5,14 @@ import           Data.Vector.Mutable as VM
 import           GHC.Prim
 import           WordSet
 
-trainText :: String -> Int -> Int -> Int -> Double -> IO WordSet
-trainText file vecLength window sampleSize s = do
-   (text,wmap,dist,wcs,wos) <-generateWordSet file vecLength
-   displayWordSet (text,wmap,dist,wcs,wos)
+trainText :: WordSet -> Int -> Int -> Double -> IO WordSet
+trainText (file,text,wmap,dist,wcs,wos) window sampleSize s = do
    for [window..(VM.length text - window -1)] $ \idx -> do
       print $ (fromIntegral (idx-window)) / (fromIntegral (VM.length text - 2* window) )
       wordCenter <-VM.read text idx
       (_,v) <- findEntry wordCenter wmap wcs
-      vec <- VM.replicate vecLength 0.0
-      store <- generateMatrixStore window sampleSize vecLength
+      vec <- VM.replicate (VM.length v) 0.0
+      store <- generateMatrixStore window sampleSize (VM.length v)
       for ([(idx-window)..(idx-1)] ++ [(idx+1)..(idx+window)]) $ \idx' -> do
          wordOut <- VM.read text idx'
          ws <- drawNFromDist sampleSize wordOut dist
@@ -29,19 +27,17 @@ trainText file vecLength window sampleSize s = do
       applyGradUSFromStore store s
       getCurrentTime >>= print
       displayVector v
-   return (text,wmap,dist,wcs,wos)
+   return (file,text,wmap,dist,wcs,wos)
 
 
-trainTextClassic :: String -> Int -> Int -> Double -> IO WordSet
-trainTextClassic file vecLength window s = do
-   (text,wmap,dist,wcs,wos) <-generateWordSet file vecLength
-   displayWordSet (text,wmap,dist,wcs,wos)
+trainTextClassic :: WordSet -> Int -> Double -> IO WordSet
+trainTextClassic (file,text,wmap,dist,wcs,wos) window s = do
    for [window..(VM.length text - window -1)] $ \idx -> do
       print $ (fromIntegral idx) / (fromIntegral (VM.length text - 2* window) )
       wordCenter <-VM.read text idx
       (_,v) <- findEntry wordCenter wmap wcs
-      vec <- VM.replicate vecLength 0.0
-      us <- generateMatrix (VM.length wcs) vecLength
+      vec <- VM.replicate (VM.length v) 0.0
+      us <- generateMatrix (VM.length wcs) (VM.length v)
       for ([(idx-window)..(idx-1)] ++ [(idx+1)..(idx+window)]) $ \idx' -> do
          wordOut <- VM.read text idx'
          (v',us')<- trainWords wmap wordOut wordCenter wcs wos s
@@ -50,7 +46,7 @@ trainTextClassic file vecLength window s = do
       addMV_ v vec
       addMatrixToWS us wos
       displayVector v
-   return (text,wmap,dist,wcs,wos)
+   return (file,text,wmap,dist,wcs,wos)
 
 readWordVectorsByName :: [String] -> HashMap String Int -> WordVectors  -> IO (MVector RealWorld (MVector RealWorld Double))
 readWordVectorsByName ws wmap wos = do
@@ -253,20 +249,20 @@ cosDistance v1 v2 = do
    v <- scalarProduct v1 v2
    a <- sqrt <$> scalarProduct v1 v1
    b <- sqrt <$> scalarProduct v2 v2
-   return $ abs (v/(a*b))
+   return $ (1 - v/(a*b))
 
 sigma :: Double -> Double
 sigma x = 1/(exp (-x) + 1)
 
 closest :: String -> WordSet -> IO String
-closest word (_,wmap,_,wcs,_) = do
+closest word (_,_,wmap,_,wcs,_) = do
    (_,vec) <- findEntry word wmap wcs
    found <- VM.replicate 1 "NotFound"
-   minDist <- VM.replicate 1 100.0
+   minDist <- VM.replicate 1 (100.0)
    for [0..(VM.length wcs -1)] $ \idx -> do
       (word',vec') <- VM.read wcs idx
       dist <-VM.read minDist 0
-      dist' <- cosDistance vec vec'
+      dist' <- distance vec vec'
       if dist' < dist && word' /= word
          then do
           VM.write found 0 word'
@@ -284,10 +280,9 @@ displayVector vec = do
 
 testTraining :: IO ()
 testTraining = do
-   set <- trainText "texts/HP.txt" 20 2 10 0.001
+   set <- generateWordSet "texts/HP.txt" 100
+   set <- trainText set 5 10 0.001
    print "Who is closest to Harry?"
    closest "Harry" set >>= print
-   print "Who is closest to glücklich"
-   closest "glücklich" set >>= print
-
-   --displayWordSet set
+   print "Who is closest to Ron"
+   closest "Ron" set >>= print

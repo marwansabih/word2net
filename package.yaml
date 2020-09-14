@@ -29,6 +29,7 @@ dependencies:
 - hashmap
 - hspec
 - QuickCheck
+- split
 
 library:
   source-dirs: src

@@ -11,7 +11,7 @@ import           System.Random
 
 type WordVector = (String, MVector RealWorld Double)
 type WordVectors = MVector RealWorld WordVector
-type WordSet = (MVector RealWorld String, HashMap String Int , [(String,Double)], WordVectors, WordVectors)
+type WordSet = (String, MVector RealWorld String, HashMap String Int , [(String,Double)], WordVectors, WordVectors)
 
 
 for = Control.Monad.forM_
@@ -26,7 +26,7 @@ generateWordSet file size = do
   let wmap = generateMap ws
   vs <- genWordVectors ws size
   us <- genWordVectors ws size
-  return (text, wmap, dist, vs, us)
+  return (file, text, wmap, dist, vs, us)
 
 drawNFromDist :: Int -> String -> [(String,Double)] -> IO [String]
 drawNFromDist  n wordOut dict = drawNFromDist' n wordOut dict []
@@ -64,7 +64,7 @@ unigramDist' (x:xs) ys = unigramDist' xs' (ys ++ [(x,nr)])
     xs' = Prelude.filter (/=x) xs
 
 displayWordSet :: WordSet -> IO ()
-displayWordSet (_,_,_,vs,_) = do
+displayWordSet (_,_,_,_,vs,_) = do
   for [0..(VM.length vs -1)] $ \idx -> do
     (word, vec) <- VM.read vs idx
     let space = Prelude.concat $ Prelude.replicate (50 - Prelude.length word) " "

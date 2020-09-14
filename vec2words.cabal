@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b8fe262def61941ea5e56eb7dadc014dfbfa6b9c47ebca96dc1b253c5ba1d6b3
+-- hash: 5e02fe6495e3b3d4f8c16ff59a3fda9f5e05d03b8b8a2e439c5fec709c5ef3bc
 
 name:           vec2words
 version:        0.1.0.0
@@ -29,6 +29,8 @@ library
   exposed-modules:
       GradientDescent
       Lib
+      Memory
+      Runner
       WordSet
   other-modules:
       Paths_vec2words
@@ -42,6 +44,7 @@ library
     , hashmap
     , hspec
     , random
+    , split
     , time
     , vector
   default-language: Haskell2010
@@ -61,6 +64,7 @@ executable vec2words-exe
     , hashmap
     , hspec
     , random
+    , split
     , time
     , vec2words
     , vector
@@ -82,6 +86,7 @@ test-suite vec2words-test
     , hashmap
     , hspec
     , random
+    , split
     , time
     , vec2words
     , vector
