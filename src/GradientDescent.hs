@@ -254,22 +254,32 @@ cosDistance v1 v2 = do
 sigma :: Double -> Double
 sigma x = 1/(exp (-x) + 1)
 
-closest :: String -> WordSet -> IO String
-closest word (_,_,wmap,_,wcs,_) = do
-   (_,vec) <- findEntry word wmap wcs
-   found <- VM.replicate 1 "NotFound"
-   minDist <- VM.replicate 1 (100.0)
+closest :: Int-> String -> WordSet -> IO [String]
+closest n word (_,_,wmap,_,wcs,_) = do
+   (_,vec) <- findEntry  word wmap wcs
+   recentWord <- VM.replicate 1 "NotFound"
+   recentDistant <- VM.replicate 1 (1.0/0.0)
+   found <- VM.replicate n "NotFound"
+   minDist <- VM.replicate n (1.0/0.0)
    for [0..(VM.length wcs -1)] $ \idx -> do
       (word',vec') <- VM.read wcs idx
-      dist <-VM.read minDist 0
-      dist' <- distance vec vec'
-      if dist' < dist && word' /= word
-         then do
-          VM.write found 0 word'
-          VM.write minDist 0 dist'
-         else return ()
-   word <-VM.read found 0
-   return word
+      dist' <- cosDistance vec vec'
+      VM.write recentDistant 0 dist'
+      VM.write recentWord 0  word'
+      for [0..(n-1)] $ \idx2 -> do
+         dist <- VM.read minDist idx2
+         dist' <- VM.read recentDistant 0
+         word' <- VM.read recentWord 0
+         if dist' < dist && word' /=  word
+            then do
+               w <-VM.read found idx2
+               VM.write recentWord 0 w
+               VM.write recentDistant 0 dist
+               VM.write found idx2 word'
+               VM.write minDist idx2 dist'
+            else return ()
+   ws <- mapM  (\idx -> VM.read found idx) [0..(n-1)]
+   return ws
 
 displayVector :: MVector RealWorld Double -> IO ()
 displayVector vec = do
@@ -277,12 +287,3 @@ displayVector vec = do
       v <- VM.read vec idx
       putStr $ (show v) ++ " "
    putStrLn ""
-
-testTraining :: IO ()
-testTraining = do
-   set <- generateWordSet "texts/HP.txt" 100
-   set <- trainText set 5 10 0.001
-   print "Who is closest to Harry?"
-   closest "Harry" set >>= print
-   print "Who is closest to Ron"
-   closest "Ron" set >>= print

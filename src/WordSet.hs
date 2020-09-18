@@ -94,7 +94,7 @@ toWords text = do
   return vec
 
 toWords' :: String -> [String]
-toWords' text = Prelude.map ( \word ->  foldl (\x y -> Data.List.delete y x)  word ['.', ',', ':', '!', '?'] ) rawWords
+toWords' text = Prelude.concatMap ( (\word -> if word == "" then [] else [word]) . (\word ->  foldl (\x y -> Prelude.filter ( /=y) x)  word ['.', ',', ':', '!', '?','"',';','«','»','-','‹','›']) ) rawWords
   where
     rawWords = words text
 
@@ -124,7 +124,7 @@ printWords ws = do
 
 genWordVec :: Int -> IO (MVector RealWorld Double)
 genWordVec size = do
-  samples <- Control.Monad.replicateM size $ randomRIO (-0.01::Double,0.01) -- Data.List.take size <$> normalsIO
+  samples <- Control.Monad.replicateM size $ randomRIO (-0.00001::Double,0.00001) -- Data.List.take size <$> normalsIO
   vec <- VM.replicate size 0.0
   for (zip [0..] samples) $ \(idx,sample) -> do
     VM.write vec idx sample

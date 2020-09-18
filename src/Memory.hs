@@ -5,6 +5,7 @@ import           Data.HashMap        as M
 import           Data.List.Split
 import           Data.Vector.Mutable as VM
 import           System.Directory
+import           System.IO
 import           WordSet
 
 saveWordSet :: WordSet -> IO ()
@@ -21,23 +22,26 @@ saveMap file wmap = do
    let ks = keys wmap
    let es = elems wmap
    writeFile file ""
-   mapM_ (\(key, ele) -> appendFile file $ key ++" " ++ show ele ++ "\n") $ zip ks es
+   withFile file AppendMode $ \handle -> do
+      mapM_ (\(key, ele) -> hPutStr handle $ key ++" " ++ show ele ++ "\n") $ zip ks es
 
 saveDist :: String -> [(String,Double)] -> IO ()
 saveDist file dist = do
    writeFile file ""
-   mapM_ (\(key,ele) -> appendFile file $ key ++" " ++ show ele ++ "\n") dist
+   withFile file AppendMode $ \handle -> do
+      mapM_ (\(key,ele) -> hPutStr handle $ key ++" " ++ show ele ++ "\n") dist
 
 saveVector :: String -> WordVectors -> IO ()
 saveVector file vec = do
    writeFile file ""
-   for [0.. (VM.length vec -1)] $ \idx -> do
-      (key,v) <- VM.read vec idx
-      appendFile file ( key ++ " " )
-      for [0.. (VM.length v -1)] $ \idx2 -> do
-         x <- VM.read v idx2
-         appendFile file ( show x ++ " ")
-      appendFile file "\n"
+   withFile file AppendMode $ \handle -> do
+      for [0.. (VM.length vec -1)] $ \idx -> do
+         (key,v) <- VM.read vec idx
+         hPutStr handle $ ( key ++ " " )
+         for [0.. (VM.length v -1)] $ \idx2 -> do
+            x <- VM.read v idx2
+            hPutStr handle $ ( show x ++ " ")
+         hPutStr handle $ "\n"
 
 loadWordSet :: String -> IO WordSet
 loadWordSet file = do

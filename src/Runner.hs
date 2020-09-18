@@ -21,14 +21,14 @@ run epochs config = do
   let sz = sampleSize config
   let lr = learningRate config
   set <- if exist
-    then loadWordSet f'
-    else generateWordSet file vl
+    then loadWordSet f
+    else generateWordSet f vl
   train epochs ws sz lr set
 
 train :: Int -> Int -> Int -> Double -> WordSet -> IO WordSet
 train 0 ws sz lr set = return set
 train n ws sz lr set = do
-  set <- trainText ws sz lr set
+  set <- trainText set ws sz lr
   print "Start Saving"
   saveWordSet set
   print $ "Epoch " ++ (show n)

@@ -53,5 +53,10 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -O2
+    - -optc-O3
+    - -funfolding-use-threshold=0
+    - -fexcess-precision 
+
     dependencies:
     - vec2words
